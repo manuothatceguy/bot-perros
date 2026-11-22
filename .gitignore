@@ -221,3 +221,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project local data & SQLite DB
+data/
+*.db
+*.db-wal
+*.db-shm

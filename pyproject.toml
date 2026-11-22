@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bot-perros"
+version = "0.1.0"
+description = "Bot familiar de gestión de medicación, stock y turnos veterinarios para Pancho y Tito"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "uvicorn[standard]>=0.32,<1",
+  "httpx>=0.28,<1",
+  "apscheduler>=3.10,<4",
+  "pydantic>=2.10,<3",
+  "pydantic-settings>=2.7,<3",
+  "tzdata>=2024.2",
+  "mcp>=1.9,<2",
+  "pillow>=11,<13",
+  "python-multipart>=0.0.12",
+  "pyjwt[crypto]>=2.8",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.25",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["static/*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["."]
+testpaths = ["tests"]

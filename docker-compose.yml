@@ -1,0 +1,32 @@
+services:
+  bot-perros:
+    build: .
+    container_name: bot-perros
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "3010:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - waha_default
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bot-perros.rule=Host(`${APP_HOST:-perros.local}`)"
+      - "traefik.http.routers.bot-perros.entrypoints=web"
+      - "traefik.http.services.bot-perros.loadbalancer.server.port=8000"
+      - "traefik.docker.network=dokploy-network"
+
+networks:
+  waha_default:
+    external: true
+  dokploy-network:
+    external: true

@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Pancho &amp; Tito — Bot Familiar</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --surface: #131c31;
+      --surface-2: #1b2640;
+      --border: #2a3958;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-dark: #0284c7;
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      padding-bottom: 84px;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    .container { max-width: 820px; margin: 0 auto; padding: 14px; }
+
+    /* Header */
+    header {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(11, 17, 32, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      max-width: 820px; margin: 0 auto; padding: 12px 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .brand h1 { margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px; }
+    .brand-sub { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+    .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    /* Pills & Badges */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.72rem; font-weight: 600; padding: 3px 8px;
+      border-radius: 999px; border: 1px solid var(--border);
+      background: var(--surface-2); color: var(--muted); white-space: nowrap;
+    }
+    .badge.ok { background: rgba(16,185,129,.15); color: #34d399; border-color: rgba(16,185,129,.35); }
+    .badge.warn { background: rgba(245,158,11,.15); color: #fbbf24; border-color: rgba(245,158,11,.35); }
+    .badge.danger { background: rgba(239,68,68,.15); color: #f87171; border-color: rgba(239,68,68,.35); }
+    .badge.accent { background: rgba(56,189,248,.14); color: #7dd3fc; border-color: rgba(56,189,248,.35); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      border: 1px solid var(--border); background: var(--surface-2);
+      color: var(--text); padding: 9px 13px; border-radius: 10px;
+      font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: .15s;
+    }
+    .btn:hover { filter: brightness(1.1); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-sm { padding: 6px 10px; font-size: 0.8rem; border-radius: 8px; }
+    .btn-primary { background: var(--accent-dark); border-color: var(--accent); color: #fff; }
+    .btn-ok { background: #059669; border-color: var(--ok); color: #fff; }
+    .btn-danger { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.4); color: #fca5a5; }
+    .btn-ghost { background: transparent; }
+
+    /* Cards & Layout */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px; margin-bottom: 12px;
+    }
+    .card-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 10px; margin-bottom: 10px;
+    }
+    .card-title { margin: 0; font-size: 1.02rem; font-weight: 700; }
+    .muted { color: var(--muted); font-size: 0.84rem; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    @media (max-width: 580px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin: 6px 0 12px;
+    }
+    .section-head h2 { margin: 0; font-size: 1.08rem; }
+
+    /* Alert Banner */
+    .alert-banner {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px;
+    }
+    .alert-banner h3 { margin: 0 0 8px; font-size: 0.94rem; color: #fca5a5; }
+    .alert-item {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; padding: 6px 0; border-top: 1px solid rgba(239,68,68,.2);
+    }
+    .alert-item:first-of-type { border-top: none; }
+
+    /* Med Rows inside Meal Card */
+    .timing-group { margin-top: 8px; }
+    .timing-title { font-size: 0.78rem; font-weight: 700; color: #7dd3fc; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+    .med-line {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 6px 9px; border-radius: 8px; background: var(--surface-2); margin-bottom: 5px;
+      font-size: 0.88rem;
+    }
+    .card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+    /* Filter Chips */
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .chip {
+      border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+      padding: 6px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    }
+    .chip.active { background: var(--accent-dark); border-color: var(--accent); color: #fff; }
+
+    /* Forms */
+    .field { margin-bottom: 11px; }
+    .field label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 9px 11px; border-radius: 9px;
+      border: 1px solid var(--border); background: var(--bg); font-size: 0.94rem;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .row-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .check-row { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; margin: 8px 0; cursor: pointer; }
+    .check-row input { width: auto; }
+
+    /* Bottom Navigation */
+    nav.tabs {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
+      background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border);
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .tab-btn {
+      background: none; border: none; color: var(--muted);
+      padding: 9px 4px 10px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      font-size: 0.72rem; font-weight: 600;
+    }
+    .tab-btn span.ico { font-size: 1.15rem; }
+    .tab-btn.active { color: var(--accent); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Table/Log List */
+    .log-row {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.84rem;
+    }
+    .log-row:last-child { border-bottom: none; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(2, 6, 23, 0.75); backdrop-filter: blur(4px);
+      display: none; align-items: flex-end; justify-content: center; padding: 0;
+    }
+    .modal-backdrop.open { display: flex; }
+    @media (min-width: 600px) {
+      .modal-backdrop { align-items: center; padding: 16px; }
+    }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 18px 18px 0 0; width: 100%; max-width: 520px;
+      max-height: 90vh; overflow-y: auto; padding: 18px;
+    }
+    @media (min-width: 600px) {
+      .modal { border-radius: 16px; }
+    }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .modal-head h3 { margin: 0; font-size: 1.05rem; }
+
+    /* Toast */
+    #toast {
+      position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+      z-index: 70; padding: 10px 16px; border-radius: 10px;
+      background: #1e293b; border: 1px solid var(--border);
+      box-shadow: 0 12px 30px rgba(0,0,0,.45);
+      font-size: 0.88rem; font-weight: 600; display: none; max-width: 92vw;
+    }
+    #toast.show { display: block; }
+    #toast.ok { border-color: var(--ok); color: #6ee7b7; }
+    #toast.err { border-color: var(--danger); color: #fca5a5; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; word-break: break-all; }
+    .photo-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .photo-thumb {
+      position: relative; width: 74px; height: 74px; border-radius: 10px;
+      overflow: hidden; border: 1px solid var(--border); background: var(--bg);
+      cursor: pointer; flex-shrink: 0;
+    }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .photo-thumb .photo-kind {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(11,17,32,0.84); font-size: 0.63rem; font-weight: 700;
+      text-align: center; padding: 2px 3px; color: #e2e8f0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .photo-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .photo-card img { width: 100%; height: 150px; object-fit: cover; display: block; cursor: zoom-in; }
+    .photo-card-body { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .lightbox-backdrop {
+      position: fixed; inset: 0; z-index: 80;
+      background: rgba(2, 6, 23, 0.92);
+      display: none; flex-direction: column; align-items: center; justify-content: center; padding: 16px;
+    }
+    .lightbox-backdrop.open { display: flex; }
+    .lightbox-backdrop img { max-width: 100%; max-height: 78vh; border-radius: 12px; border: 1px solid var(--border); }
+    .lightbox-caption { margin-top: 10px; font-size: 0.92rem; color: var(--text); text-align: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <h1>🐾 <span id="brandDogs">Pancho &amp; Tito</span></h1>
+        <div class="brand-sub">
+          <span id="wahaBadge" class="badge">Conectando...</span>
+          <span id="todayBadge" class="muted"></span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-sm" onclick="syncWaha()" title="Sincronizar webhook WAHA">🔗 Sync</button>
+        <button class="btn btn-sm" onclick="loadAll(true)" title="Refrescar">🔄</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- TAB: HOY -->
+    <section id="tab-hoy" class="tab-panel active">
+      <div id="lowStockBanner"></div>
+      <div class="section-head">
+        <h2>Turnos de hoy</h2>
+      </div>
+      <div id="mealsGrid" class="grid-2"></div>
+
+      <div class="section-head" style="margin-top: 18px;">
+        <h2>Próximo turno veterinario</h2>
+        <button class="btn btn-sm" onclick="switchTab('appts')">Ver todos</button>
+      </div>
+      <div id="nextApptCard"></div>
+    </section>
+
+    <!-- TAB: MEDICACION -->
+    <section id="tab-meds" class="tab-panel">
+      <div class="section-head">
+        <h2>Medicación y Stock</h2>
+        <button class="btn btn-primary btn-sm" onclick="openMedModal()">+ Nuevo</button>
+      </div>
+      <div id="medFilters" class="chips"></div>
+      <div id="medsList"></div>
+
+      <div class="section-head" style="margin-top: 20px;">
+        <h2>Últimos movimientos de stock</h2>
+      </div>
+      <div class="card" id="movementsList"></div>
+    </section>
+
+    <!-- TAB: TURNOS -->
+    <section id="tab-appts" class="tab-panel">
+      <div class="section-head">
+        <h2>Turnos Veterinarios</h2>
+        <button class="btn btn-primary btn-sm" onclick="openApptModal()">+ Nuevo turno</button>
+      </div>
+      <div id="apptsList"></div>
+    </section>
+
+    <!-- TAB: CONFIG -->
+    <section id="tab-config" class="tab-panel">
+      <div class="section-head">
+        <h2>Perros</h2>
+        <button class="btn btn-primary btn-sm" onclick="openDogModal()">+ Agregar perro</button>
+      </div>
+      <div id="dogsList"></div>
+
+      <div class="section-head" style="margin-top: 18px;">
+        <h2>WhatsApp y Horarios</h2>
+      </div>
+      <div class="card">
+        <div class="field">
+          <label>Grupo de WhatsApp vinculado</label>
+          <div style="display:flex; gap:8px;">
+            <select id="cfgGroupSelect" style="flex:1;"></select>
+            <button class="btn btn-sm" type="button" onclick="refreshGroups(true)">Buscar grupos</button>
+          </div>
+          <div class="muted" style="margin-top:4px;" id="cfgGroupHint"></div>
+        </div>
+        <div class="field">
+          <label>ID manual del grupo (@g.us)</label>
+          <input type="text" id="cfgGroupId" placeholder="120363...@g.us" />
+        </div>
+        <div class="field">
+          <label>Nombre esperado del grupo (para auto-vinculación)</label>
+          <input type="text" id="cfgGroupName" placeholder="Perros" />
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Almuerzo</label>
+            <input type="time" id="cfgLunch" />
+          </div>
+          <div class="field">
+            <label>Follow-up almuerzo</label>
+            <input type="time" id="cfgLunchFollowup" />
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Cena</label>
+            <input type="time" id="cfgDinner" />
+          </div>
+          <div class="field">
+            <label>Follow-up cena</label>
+            <input type="time" id="cfgDinnerFollowup" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Fotos de medicación en mensajes privados (DM)</label>
+          <select id="cfgSendPhotos">
+            <option value="always">Siempre al enviar el checklist</option>
+            <option value="on_demand">Solo cuando pidan /fotos</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="saveSettings()">Guardar configuración</button>
+          <button class="btn" onclick="syncWaha()">Sincronizar Webhook WAHA</button>
+        </div>
+      </div>
+
+      <div class="section-head" style="margin-top: 18px;">
+        <h2>Integrantes de la familia</h2>
+      </div>
+      <div class="card" id="familyList"></div>
+
+      <div class="section-head" style="margin-top: 18px;">
+        <h2>API &amp; MCP</h2>
+      </div>
+      <div class="card">
+        <div class="muted">Endpoint MCP (Streamable HTTP):</div>
+        <div class="mono" id="mcpUrlText" style="margin:4px 0 10px;"></div>
+        <div class="muted">Documentación OpenAPI / Swagger: <a href="/docs" target="_blank" style="color:var(--accent);">/docs</a></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="hoy" onclick="switchTab('hoy')"><span class="ico">🏠</span><span>Hoy</span></button>
+    <button class="tab-btn" data-tab="meds" onclick="switchTab('meds')"><span class="ico">💊</span><span>Medicación</span></button>
+    <button class="tab-btn" data-tab="appts" onclick="switchTab('appts')"><span class="ico">📅</span><span>Turnos</span></button>
+    <button class="tab-btn" data-tab="config" onclick="switchTab('config')"><span class="ico">⚙️</span><span>Config</span></button>
+  </nav>
+
+  <!-- MODAL CONTAINER -->
+  <div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this) closeModal()">
+    <div class="modal" id="modalBody"></div>
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox-backdrop" id="lightboxBackdrop" onclick="closeLightbox()">
+    <img id="lightboxImg" src="" alt="Foto de referencia" onclick="event.stopPropagation()" />
+    <div class="lightbox-caption" id="lightboxCaption"></div>
+    <button class="btn btn-sm" style="margin-top:12px;" onclick="closeLightbox()">Cerrar</button>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    const state = {
+      dashboard: null,
+      waha: null,
+      medFilter: "all",
+      activeTab: "hoy",
+    };
+
+    function esc(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    const PILL_FRACTIONS = [
+      [0.125, "1/8"],
+      [0.25, "1/4"],
+      [1 / 3, "1/3"],
+      [0.375, "3/8"],
+      [0.5, "1/2"],
+      [0.625, "5/8"],
+      [2 / 3, "2/3"],
+      [0.75, "3/4"],
+      [0.875, "7/8"],
+    ];
+
+    function fmtQty(v, unit = null) {
+      const n = Math.round(Number(v || 0) * 10000) / 10000;
+      if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
+      if (unit === "pills") {
+        const whole = Math.floor(n + 1e-9);
+        const frac = n - whole;
+        for (const [target, label] of PILL_FRACTIONS) {
+          if (Math.abs(frac - target) < 5e-4) {
+            return whole > 0 ? `${whole} ${label}` : label;
+          }
+        }
+      }
+      return String(n).replace(/\.?0+$/, "");
+    }
+
+    function parseQty(raw) {
+      const s = String(raw ?? "").trim().replace(/\s+/g, " ").replace(",", ".");
+      if (!s) return NaN;
+      let m = s.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+      if (m) {
+        const whole = Number(m[1]), num = Number(m[2]), den = Number(m[3]);
+        return den > 0 ? Math.round((whole + num / den) * 10000) / 10000 : NaN;
+      }
+      m = s.match(/^(\d+)\/(\d+)$/);
+      if (m) {
+        const num = Number(m[1]), den = Number(m[2]);
+        return den > 0 ? Math.round((num / den) * 10000) / 10000 : NaN;
+      }
+      if (/^\d+(?:\.\d+)?$/.test(s)) {
+        return Math.round(Number(s) * 10000) / 10000;
+      }
+      return NaN;
+    }
+
+    function fmtUnit(unit, qty) {
+      const q = Number(qty || 0);
+      if (unit === "pills") return q <= 1 ? "pastilla" : "pastillas";
+      if (unit === "drops") return q <= 1 ? "gota" : "gotas";
+      return "ml";
+    }
+
+    function fmtTime(ts) {
+      if (!ts) return "";
+      const d = new Date(ts * 1000);
+      return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+    }
+
+    function fmtDateTime(ts) {
+      if (!ts) return "";
+      const d = new Date(ts * 1000);
+      return d.toLocaleString("es-AR", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit", hour12: false
+      });
+    }
+
+    function fmtDateStr(iso) {
+      if (!iso) return "";
+      const [y, m, d] = iso.split("-");
+      return `${d}/${m}/${y}`;
+    }
+
+    function toast(msg, type = "ok") {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.className = `show ${type}`;
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => { el.className = ""; }, 3500);
+    }
+
+    async function api(url, opts = {}) {
+      const res = await fetch(url, {
+        headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+        ...opts,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.detail || data.error || `Error HTTP ${res.status}`);
+      }
+      return data;
+    }
+
+    function switchTab(tab) {
+      state.activeTab = tab;
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === `tab-${tab}`));
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+    }
+
+    async function loadAll(showToast = false) {
+      try {
+        const [dash, waha] = await Promise.all([
+          api("/api/dashboard"),
+          api("/api/waha/groups").catch(() => null),
+        ]);
+        state.dashboard = dash;
+        state.waha = waha;
+        renderAll();
+        if (showToast) toast("Actualizado");
+      } catch (err) {
+        toast(err.message, "err");
+      }
+    }
+
+    async function refreshGroups(refresh = true) {
+      try {
+        const waha = await api(`/api/waha/groups?refresh=${refresh ? "true" : "false"}`);
+        state.waha = waha;
+        if (waha.auto_bound_group_id) {
+          toast("Grupo vinculado automáticamente");
+          await loadAll(false);
+        } else {
+          renderHeader();
+          renderConfigGroups();
+          toast(waha.ok ? `Encontrados ${waha.groups.length} grupos` : (waha.error || "Error WAHA"), waha.ok ? "ok" : "err");
+        }
+      } catch (err) {
+        toast(err.message, "err");
+      }
+    }
+
+    async function syncWaha() {
+      try {
+        const res = await api("/api/waha/sync-webhook", { method: "POST" });
+        toast(res.updated ? "WAHA sincronizado (store + webhook)" : "WAHA ya estaba sincronizado");
+        await loadAll(false);
+      } catch (err) {
+        toast(err.message, "err");
+      }
+    }
+
+    function renderAll() {
+      renderHeader();
+      renderHoy();
+      renderMeds();
+      renderAppts();
+      renderConfig();
+    }
+
+    function renderHeader() {
+      const dash = state.dashboard;
+      if (!dash) return;
+      const activeDogs = dash.dogs.filter(d => d.active).map(d => d.name);
+      document.getElementById("brandDogs").textContent = activeDogs.length ? activeDogs.join(" & ") : "Perros";
+      document.getElementById("todayBadge").textContent = fmtDateStr(dash.today);
+
+      const badge = document.getElementById("wahaBadge");
+      const gid = dash.settings.whatsapp_group_id;
+      const w = state.waha;
+      if (w && !w.ok) {
+        badge.className = "badge danger";
+        badge.textContent = "WAHA sin conexión";
+      } else if (gid) {
+        const gObj = w && w.groups ? w.groups.find(g => g.id === gid) : null;
+        const gName = gObj ? gObj.subject : (dash.settings.whatsapp_group_name || "Grupo OK");
+        badge.className = "badge ok";
+        badge.textContent = `WhatsApp: ${gName}`;
+      } else {
+        badge.className = "badge warn";
+        badge.textContent = "Falta vincular grupo";
+      }
+      document.getElementById("mcpUrlText").textContent = `${window.location.origin}/mcp`;
+    }
+
+    function renderHoy() {
+      const dash = state.dashboard;
+      if (!dash) return;
+
+      // Low stock banner
+      const alerts = dash.medications.filter(m => m.stock_status && m.stock_status.should_alert);
+      const bannerEl = document.getElementById("lowStockBanner");
+      if (alerts.length) {
+        bannerEl.innerHTML = `
+          <div class="alert-banner">
+            <h3>🛒 Alerta de compra</h3>
+            ${alerts.map(m => `
+              <div class="alert-item">
+                <div>
+                  <strong>${esc(m.dog_name)} — ${esc(m.name)}</strong>
+                  <div class="muted">Quedan ${fmtQty(m.stock_quantity, m.unit)} ${fmtUnit(m.unit, m.stock_quantity)} (~${m.stock_status.days_stock} días)</div>
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="openStockModal(${m.id}, 'purchase')">+ Compra</button>
+              </div>
+            `).join("")}
+          </div>`;
+      } else {
+        bannerEl.innerHTML = "";
+      }
+
+      // Today meals
+      const mealsEl = document.getElementById("mealsGrid");
+      mealsEl.innerHTML = ["lunch", "dinner"].map(key => {
+        const m = dash.today_meals[key];
+        const log = m.log;
+        let statusBadge = `<span class="badge">⏳ Pendiente</span>`;
+        if (log && log.given_at) {
+          statusBadge = `<span class="badge ok">✅ Listo por ${esc(log.given_by)} (${fmtTime(log.given_at)})</span>`;
+        } else if (log && log.claimed_by) {
+          const fastTxt = log.fasting_remind_at && !log.fasting_reminded
+            ? ` · aviso ${fmtTime(log.fasting_remind_at)}` : "";
+          statusBadge = `<span class="badge warn">🙋 Tomado: ${esc(log.claimed_by)}${fastTxt}</span>`;
+        } else if (log && log.reminder_sent_at) {
+          statusBadge = `<span class="badge accent">📣 Encuesta enviada</span>`;
+        }
+
+        const fastingBadge = m.fasting_offset_min > 0
+          ? `<span class="badge warn">⏱️ Ayunas -${m.fasting_offset_min}m</span>` : "";
+
+        const byTiming = { fasting_before: [], with_food: [], after_food: [] };
+        m.due_meds.forEach(dm => (byTiming[dm.timing] || byTiming.with_food).push(dm));
+
+        const renderGroup = (title, items) => {
+          if (!items.length) return "";
+          return `
+            <div class="timing-group">
+              <div class="timing-title">${title}</div>
+              ${items.map(it => {
+                const pCount = (it.photos || []).length;
+                const photoAction = pCount === 1
+                  ? `openLightbox('${esc(it.photos[0].url)}', '${esc(it.dog_name + " — " + it.name)}')`
+                  : `openPhotosModal(${it.id})`;
+                return `
+                <div class="med-line">
+                  <div><strong>${esc(it.dog_name)}</strong> · ${esc(it.name)}</div>
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    ${pCount ? `<button class="btn btn-sm" style="padding:3px 7px;" onclick="${photoAction}" title="Ver foto">📷</button>` : ""}
+                    <div class="badge">${fmtQty(it.due_dose, it.unit)} ${fmtUnit(it.unit, it.due_dose)}</div>
+                  </div>
+                </div>`;
+              }).join("")}
+            </div>`;
+        };
+
+        const medsHtml = m.due_meds.length
+          ? renderGroup("⏱️ En ayunas", byTiming.fasting_before)
+            + renderGroup("🥣 Con la comida", byTiming.with_food)
+            + renderGroup("💊 Después de comer", byTiming.after_food)
+          : `<div class="muted" style="margin-top:8px;">Sin medicación programada para este turno (solo comida).</div>`;
+
+        const isConfirmed = Boolean(log && log.given_at);
+        return `
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3 class="card-title">${key === "lunch" ? "🍽️" : "🌙"} ${esc(m.label)} · ${esc(m.scheduled_time)}</h3>
+                <div style="margin-top:5px; display:flex; gap:6px; flex-wrap:wrap;">
+                  ${statusBadge}
+                  ${fastingBadge}
+                </div>
+              </div>
+            </div>
+            ${medsHtml}
+            <div class="card-actions">
+              ${!isConfirmed ? `<button class="btn btn-sm" onclick="triggerMeal('${key}')">📣 Encuesta grupo</button>` : ""}
+              ${!isConfirmed ? `<button class="btn btn-sm btn-ok" onclick="openConfirmMealModal('${key}')">✅ Confirmar toma</button>` : ""}
+              ${log ? `<button class="btn btn-sm btn-ghost" onclick="resetMeal('${key}')">↺ Reiniciar</button>` : ""}
+            </div>
+          </div>`;
+      }).join("");
+
+      // Next appointment
+      const nextEl = document.getElementById("nextApptCard");
+      const nextAppt = dash.appointments[0];
+      if (!nextAppt) {
+        nextEl.innerHTML = `<div class="card muted">No hay turnos veterinarios próximos.</div>`;
+      } else {
+        nextEl.innerHTML = renderApptCardHtml(nextAppt, false);
+      }
+    }
+
+    function renderMeds() {
+      const dash = state.dashboard;
+      if (!dash) return;
+
+      const filterEl = document.getElementById("medFilters");
+      const chips = [
+        { id: "all", label: "Todos" },
+        ...dash.dogs.map(d => ({ id: `dog:${d.id}`, label: d.name })),
+        { id: "alerts", label: "🚨 Alertas" },
+      ];
+      filterEl.innerHTML = chips.map(c => `
+        <button class="chip ${state.medFilter === c.id ? "active" : ""}" onclick="state.medFilter='${c.id}'; renderMeds()">${esc(c.label)}</button>
+      `).join("");
+
+      let meds = dash.medications;
+      if (state.medFilter.startsWith("dog:")) {
+        const id = Number(state.medFilter.split(":")[1]);
+        meds = meds.filter(m => m.dog_id === id);
+      } else if (state.medFilter === "alerts") {
+        meds = meds.filter(m => m.stock_status && m.stock_status.should_alert);
+      }
+
+      const listEl = document.getElementById("medsList");
+      if (!meds.length) {
+        listEl.innerHTML = `<div class="card muted">No hay medicamentos en esta vista. Tocá "+ Nuevo" para agregar uno.</div>`;
+      } else {
+        listEl.innerHTML = meds.map(m => {
+          const st = m.stock_status || {};
+          let stockBadge = `<span class="badge">Sin dosis diaria</span>`;
+          if (st.is_expired) {
+            stockBadge = `<span class="badge">Finalizado (${fmtDateStr(m.end_date)})</span>`;
+          } else if (!m.active) {
+            stockBadge = `<span class="badge">Pausado</span>`;
+          } else if (st.covers_until_end) {
+            stockBadge = `<span class="badge ok">✅ Cubre hasta ${fmtDateStr(m.end_date)}</span>`;
+          } else if (st.days_stock !== null && st.days_stock !== undefined) {
+            stockBadge = st.should_alert
+              ? `<span class="badge danger">🚨 ~${st.days_stock} días</span>`
+              : `<span class="badge ok">~${st.days_stock} días</span>`;
+          }
+
+          const timingMap = {
+            fasting_before: `⏱️ Ayunas (-${m.fasting_offset_min}m)`,
+            with_food: "🥣 Con comida",
+            after_food: "💊 Post comida",
+          };
+
+          return `
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h3 class="card-title">${esc(m.dog_name)} — ${esc(m.name)}</h3>
+                  <div style="margin-top:5px; display:flex; gap:6px; flex-wrap:wrap;">
+                    ${stockBadge}
+                    <span class="badge accent">${timingMap[m.timing] || m.timing}</span>
+                    ${m.interval_days > 1 ? `<span class="badge">Cada ${m.interval_days} días</span>` : ""}
+                    ${m.end_date && !st.is_expired ? `<span class="badge">Hasta ${fmtDateStr(m.end_date)}</span>` : ""}
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:1.08rem; font-weight:700;">${fmtQty(m.stock_quantity, m.unit)}</div>
+                  <div class="muted">${fmtUnit(m.unit, m.stock_quantity)}</div>
+                </div>
+              </div>
+              <div class="muted">
+                Almuerzo: <strong>${fmtQty(m.dose_lunch, m.unit)}</strong> · Cena: <strong>${fmtQty(m.dose_dinner, m.unit)}</strong> ${fmtUnit(m.unit, 2)}
+                ${m.notes ? ` · ${esc(m.notes)}` : ""}
+              </div>
+              ${(m.photos && m.photos.length) ? `
+                <div class="photo-strip">
+                  ${m.photos.map(p => `
+                    <div class="photo-thumb" onclick="openLightbox('${esc(p.url)}', '${esc(m.dog_name + " — " + m.name + " · " + (PHOTO_KIND_LABELS[p.kind] || "Referencia") + (p.caption ? " (" + p.caption + ")" : ""))}')">
+                      <img src="${esc(p.url)}" alt="${esc(m.name)}" loading="lazy" />
+                      <span class="photo-kind">${esc(PHOTO_KIND_LABELS[p.kind] || "Foto")}</span>
+                    </div>
+                  `).join("")}
+                </div>` : ""}
+              <div class="card-actions">
+                <button class="btn btn-sm" onclick="openPhotosModal(${m.id})">📷 Fotos${m.photos?.length ? ` (${m.photos.length})` : ""}</button>
+                <button class="btn btn-sm btn-primary" onclick="openStockModal(${m.id}, 'purchase')">+ Compra</button>
+                <button class="btn btn-sm" onclick="openStockModal(${m.id}, 'set')">Recalibrar</button>
+                <button class="btn btn-sm" onclick="openMedModal(${m.id})">Editar</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteMed(${m.id})">Eliminar</button>
+              </div>
+            </div>`;
+        }).join("");
+      }
+
+      const movEl = document.getElementById("movementsList");
+      if (!dash.stock_movements.length) {
+        movEl.innerHTML = `<div class="muted">Todavía no hay movimientos registrados.</div>`;
+      } else {
+        movEl.innerHTML = dash.stock_movements.slice(0, 20).map(mv => {
+          const sign = mv.delta > 0 ? "+" : "";
+          const cls = mv.delta > 0 ? "ok" : "warn";
+          return `
+            <div class="log-row">
+              <div>
+                <strong>${esc(mv.dog_name)} · ${esc(mv.med_name)}</strong>
+                <div class="muted">${esc(mv.reason)} · ${esc(mv.user)} · ${fmtDateTime(mv.created_at)}</div>
+              </div>
+              <span class="badge ${cls}">${sign}${fmtQty(mv.delta, mv.unit)} ${fmtUnit(mv.unit, Math.abs(mv.delta))}</span>
+            </div>`;
+        }).join("");
+      }
+    }
+
+    function renderApptCardHtml(a, withDelete = true) {
+      const diffHours = Math.round((a.scheduled_at - (state.dashboard?.now_ts || Date.now()/1000)) / 3600);
+      let timeBadge = "";
+      if (diffHours < 0) timeBadge = `<span class="badge">Pasado</span>`;
+      else if (diffHours < 24) timeBadge = `<span class="badge warn">En ${diffHours}h</span>`;
+      else timeBadge = `<span class="badge accent">En ${Math.round(diffHours/24)}d</span>`;
+
+      return `
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h3 class="card-title">🩺 ${esc(a.dog_name)} — ${esc(a.checkup_type)}</h3>
+              <div style="margin-top:4px; display:flex; gap:6px; flex-wrap:wrap;">
+                <span class="badge">${fmtDateTime(a.scheduled_at)}</span>
+                ${timeBadge}
+                ${a.google_calendar_event_id ? `<span class="badge ok">📆 Google Calendar</span>` : ""}
+              </div>
+            </div>
+            ${withDelete ? `<button class="btn btn-sm btn-danger" onclick="deleteAppt(${a.id})">Eliminar</button>` : ""}
+          </div>
+          ${a.location ? `<div class="muted">📍 ${esc(a.location)}</div>` : ""}
+          ${a.notes ? `<div class="muted">📝 ${esc(a.notes)}</div>` : ""}
+        </div>`;
+    }
+
+    function renderAppts() {
+      const dash = state.dashboard;
+      if (!dash) return;
+      const el = document.getElementById("apptsList");
+      const list = dash.all_appointments || dash.appointments || [];
+      if (!list.length) {
+        el.innerHTML = `<div class="card muted">No hay turnos veterinarios cargados.</div>`;
+        return;
+      }
+      el.innerHTML = list.map(a => renderApptCardHtml(a, true)).join("");
+    }
+
+    function renderConfigGroups() {
+      const dash = state.dashboard;
+      if (!dash) return;
+      const sel = document.getElementById("cfgGroupSelect");
+      const groups = (state.waha && state.waha.groups) || [];
+      const curId = dash.settings.whatsapp_group_id || "";
+      sel.innerHTML = `<option value="">-- Elegir grupo de WhatsApp --</option>` +
+        groups.map(g => `<option value="${esc(g.id)}" ${g.id === curId ? "selected" : ""}>${esc(g.subject || g.id)}</option>`).join("");
+      sel.onchange = () => {
+        if (sel.value) document.getElementById("cfgGroupId").value = sel.value;
+      };
+      document.getElementById("cfgGroupHint").textContent = state.waha
+        ? (state.waha.ok ? `Sesión WAHA: ${state.waha.session_status}` : `WAHA: ${state.waha.error || "no disponible"}`)
+        : "";
+    }
+
+    function renderConfig() {
+      const dash = state.dashboard;
+      if (!dash) return;
+
+      document.getElementById("dogsList").innerHTML = dash.dogs.map(d => `
+        <div class="card">
+          <div class="card-head" style="margin-bottom:0;">
+            <div>
+              <h3 class="card-title">🐾 ${esc(d.name)} ${d.active ? "" : '<span class="badge">Inactivo</span>'}</h3>
+              ${d.notes ? `<div class="muted">${esc(d.notes)}</div>` : ""}
+            </div>
+            <button class="btn btn-sm" onclick="openDogModal(${d.id})">Editar</button>
+          </div>
+        </div>
+      `).join("");
+
+      const s = dash.settings;
+      document.getElementById("cfgGroupId").value = s.whatsapp_group_id || "";
+      document.getElementById("cfgGroupName").value = s.whatsapp_group_name || "Perros";
+      document.getElementById("cfgLunch").value = s.lunch_time || "12:00";
+      document.getElementById("cfgLunchFollowup").value = s.lunch_followup_time || "14:00";
+      document.getElementById("cfgDinner").value = s.dinner_time || "20:00";
+      document.getElementById("cfgDinnerFollowup").value = s.dinner_followup_time || "22:00";
+      document.getElementById("cfgSendPhotos").value = s.send_photos_in_dm || "always";
+      renderConfigGroups();
+
+      const famEl = document.getElementById("familyList");
+      if (!dash.family.length) {
+        famEl.innerHTML = `<div class="muted">Aparecerán acá automáticamente cuando interactúen con el bot en WhatsApp.</div>`;
+      } else {
+        famEl.innerHTML = dash.family.map(f => `
+          <div class="log-row">
+            <div style="flex:1;">
+              <input type="text" id="fam-${f.id}" value="${esc(f.display_name)}" style="padding:6px 9px; border-radius:8px; border:1px solid var(--border); background:var(--bg); width:100%; max-width:220px;" />
+              <div class="muted mono" style="margin-top:2px;">${esc(f.jid)}</div>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="saveFamilyName(${f.id})">Guardar</button>
+          </div>
+        `).join("");
+      }
+    }
+
+    // ---- Modals & Actions ----
+    function openModal(html) {
+      document.getElementById("modalBody").innerHTML = html;
+      document.getElementById("modalBackdrop").classList.add("open");
+    }
+    function closeModal() {
+      document.getElementById("modalBackdrop").classList.remove("open");
+    }
+
+    function openConfirmMealModal(meal) {
+      const label = meal === "lunch" ? "Almuerzo" : "Cena";
+      openModal(`
+        <div class="modal-head">
+          <h3>✅ Confirmar ${label}</h3>
+          <button class="btn btn-sm" onclick="closeModal()">✕</button>
+        </div>
+        <div class="field">
+          <label>¿Quién le dio de comer?</label>
+          <input type="text" id="confirmBy" value="Manu" placeholder="Ej: Flor, Manu..." />
+        </div>
+        <button class="btn btn-ok" style="width:100%;" onclick="submitConfirmMeal('${meal}')">Confirmar y descontar stock</button>
+      `);
+    }
+
+    async function submitConfirmMeal(meal) {
+      const given_by = document.getElementById("confirmBy").value.trim() || "Web";
+      try {
+        await api(`/api/meals/${meal}/confirm`, { method: "POST", body: JSON.stringify({ given_by }) });
+        closeModal();
+        toast("Toma confirmada");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    async function triggerMeal(meal) {
+      try {
+        await api(`/api/meals/${meal}/trigger-reminder`, { method: "POST", body: "{}" });
+        toast("Encuesta enviada al grupo");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    async function resetMeal(meal) {
+      if (!confirm("¿Reiniciar el registro de hoy para este turno? (No revierte movimientos de stock ya descontados)")) return;
+      try {
+        await api(`/api/meals/${meal}/reset`, { method: "POST", body: "{}" });
+        toast("Turno reiniciado");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    function openStockModal(medId, mode) {
+      const med = state.dashboard.medications.find(m => m.id === medId);
+      if (!med) return;
+      const isBuy = mode === "purchase";
+      openModal(`
+        <div class="modal-head">
+          <h3>${isBuy ? "+ Registrar compra" : "Recalibrar stock"}</h3>
+          <button class="btn btn-sm" onclick="closeModal()">✕</button>
+        </div>
+        <div class="muted" style="margin-bottom:10px;">${esc(med.dog_name)} — <strong>${esc(med.name)}</strong> (actual: ${fmtQty(med.stock_quantity, med.unit)} ${fmtUnit(med.unit, med.stock_quantity)})</div>
+        <div class="field">
+          <label>${isBuy ? "Cantidad comprada a sumar" : "Cantidad real actual en casa"}</label>
+          <input type="text" inputmode="decimal" id="stockQtyInput" value="${isBuy ? "" : fmtQty(med.stock_quantity, med.unit)}" placeholder="Ej: 15, 1/2 o 9 3/4" />
+        </div>
+        <div class="field">
+          <label>Quién lo registra</label>
+          <input type="text" id="stockUserInput" value="Web" />
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="submitStock(${medId}, '${mode}')">Guardar</button>
+      `);
+    }
+
+    async function submitStock(medId, mode) {
+      const quantity = parseQty(document.getElementById("stockQtyInput").value);
+      const user = document.getElementById("stockUserInput").value.trim() || "Web";
+      if (isNaN(quantity) || (mode === "purchase" && quantity <= 0) || quantity < 0) {
+        toast("Ingresá una cantidad válida (ej: 10, 1/8, 9 3/4)", "err");
+        return;
+      }
+      try {
+        const ep = mode === "purchase" ? "purchase" : "set-stock";
+        await api(`/api/medications/${medId}/${ep}`, {
+          method: "POST",
+          body: JSON.stringify({ quantity, user }),
+        });
+        closeModal();
+        toast("Stock actualizado");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    function syncMedUnitLabels() {
+      const unitEl = document.getElementById("medUnit");
+      if (!unitEl) return;
+      const u = unitEl.value;
+      const lunchLbl = document.getElementById("medLunchLabel");
+      const dinnerLbl = document.getElementById("medDinnerLabel");
+      const stockLbl = document.getElementById("medStockLabel");
+      if (u === "pills") {
+        lunchLbl.textContent = "Dosis Almuerzo (pastillas, ej. 1/8, 1/2, 1)";
+        dinnerLbl.textContent = "Dosis Cena (pastillas)";
+        stockLbl.textContent = "Stock actual (pastillas enteras, ej. 10 o 9 3/4)";
+      } else if (u === "ml") {
+        lunchLbl.textContent = "Dosis Almuerzo (en ml)";
+        dinnerLbl.textContent = "Dosis Cena (en ml)";
+        stockLbl.textContent = "Stock actual (ml totales)";
+      } else {
+        lunchLbl.textContent = "Dosis Almuerzo (en gotas)";
+        dinnerLbl.textContent = "Dosis Cena (en gotas)";
+        stockLbl.textContent = "Stock actual (gotas totales)";
+      }
+    }
+
+    function openMedModal(medId = null) {
+      const dash = state.dashboard;
+      const med = medId ? dash.medications.find(m => m.id === medId) : null;
+      const today = dash.today;
+      const curUnit = med?.unit || "pills";
+      openModal(`
+        <div class="modal-head">
+          <h3>${med ? "Editar medicamento" : "Nuevo medicamento"}</h3>
+          <button class="btn btn-sm" onclick="closeModal()">✕</button>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Perro</label>
+            <select id="medDog">
+              ${dash.dogs.map(d => `<option value="${d.id}" ${(med ? med.dog_id === d.id : false) ? "selected" : ""}>${esc(d.name)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field">
+            <label>Unidad</label>
+            <select id="medUnit" onchange="syncMedUnitLabels()">
+              <option value="pills" ${curUnit === "pills" ? "selected" : ""}>Pastillas</option>
+              <option value="ml" ${curUnit === "ml" ? "selected" : ""}>ml (bebible)</option>
+              <option value="drops" ${curUnit === "drops" ? "selected" : ""}>Gotas</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Nombre del medicamento</label>
+          <input type="text" id="medName" value="${esc(med?.name || "")}" placeholder="Ej: Enalapril 5mg" />
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label id="medLunchLabel">Dosis Almuerzo</label>
+            <input type="text" inputmode="decimal" id="medLunch" value="${med ? fmtQty(med.dose_lunch, curUnit) : "0"}" placeholder="0, 1/8, 1/2, 1" />
+          </div>
+          <div class="field">
+            <label id="medDinnerLabel">Dosis Cena</label>
+            <input type="text" inputmode="decimal" id="medDinner" value="${med ? fmtQty(med.dose_dinner, curUnit) : "0"}" placeholder="0, 1/8, 1/2, 1" />
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Momento (timing)</label>
+            <select id="medTiming">
+              <option value="with_food" ${(!med || med.timing === "with_food") ? "selected" : ""}>Con la comida</option>
+              <option value="fasting_before" ${med?.timing === "fasting_before" ? "selected" : ""}>En ayunas (antes)</option>
+              <option value="after_food" ${med?.timing === "after_food" ? "selected" : ""}>Después de comer</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Minutos ayuno antes</label>
+            <input type="number" min="0" id="medOffset" value="${med?.fasting_offset_min ?? 30}" />
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Cada cuántos días</label>
+            <input type="number" min="1" id="medInterval" value="${med?.interval_days ?? 1}" />
+          </div>
+          <div class="field">
+            <label>Alerta compra (días)</label>
+            <input type="number" min="0" id="medAlertDays" value="${med?.alert_days ?? 5}" />
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label>Fecha inicio</label>
+            <input type="date" id="medStart" value="${med?.start_date || today}" />
+          </div>
+          <div class="field">
+            <label>Fecha fin (opcional)</label>
+            <input type="date" id="medEnd" value="${med?.end_date || ""}" />
+          </div>
+        </div>
+        <div class="field">
+          <label id="medStockLabel">Stock inicial / actual</label>
+          <input type="text" inputmode="decimal" id="medStock" value="${med ? fmtQty(med.stock_quantity, curUnit) : "0"}" placeholder="Ej: 10, 9 3/4" />
+        </div>
+        <div class="field">
+          <label>Notas (opcional)</label>
+          <input type="text" id="medNotes" value="${esc(med?.notes || "")}" placeholder="Ej: dar con jeringa" />
+        </div>
+        <label class="check-row">
+          <input type="checkbox" id="medActive" ${(!med || med.active) ? "checked" : ""} />
+          <span>Tratamiento activo</span>
+        </label>
+        <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitMed(${med ? med.id : "null"})">Guardar</button>
+      `);
+      syncMedUnitLabels();
+    }
+
+    async function submitMed(medId) {
+      const endVal = document.getElementById("medEnd").value || null;
+      const dose_lunch = parseQty(document.getElementById("medLunch").value || "0");
+      const dose_dinner = parseQty(document.getElementById("medDinner").value || "0");
+      const stock_quantity = parseQty(document.getElementById("medStock").value || "0");
+      if (isNaN(dose_lunch) || isNaN(dose_dinner) || isNaN(stock_quantity)) {
+        toast("Revisá dosis y stock (aceptan decimales o fracciones como 1/8, 1/2, 9 3/4)", "err");
+        return;
+      }
+      const payload = {
+        dog_id: Number(document.getElementById("medDog").value),
+        unit: document.getElementById("medUnit").value,
+        name: document.getElementById("medName").value.trim(),
+        dose_lunch,
+        dose_dinner,
+        timing: document.getElementById("medTiming").value,
+        fasting_offset_min: parseInt(document.getElementById("medOffset").value || "30", 10),
+        interval_days: parseInt(document.getElementById("medInterval").value || "1", 10),
+        alert_days: parseInt(document.getElementById("medAlertDays").value || "5", 10),
+        start_date: document.getElementById("medStart").value,
+        end_date: endVal,
+        stock_quantity,
+        notes: document.getElementById("medNotes").value.trim(),
+        active: document.getElementById("medActive").checked,
+      };
+      if (!payload.name) { toast("Falta el nombre", "err"); return; }
+      try {
+        if (medId) {
+          payload.clear_end_date = endVal === null;
+          await api(`/api/medications/${medId}`, { method: "PUT", body: JSON.stringify(payload) });
+        } else {
+          await api("/api/medications", { method: "POST", body: JSON.stringify(payload) });
+        }
+        closeModal();
+        toast("Medicamento guardado");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    async function deleteMed(medId) {
+      if (!confirm("¿Eliminar este medicamento y su historial de movimientos?")) return;
+      try {
+        await api(`/api/medications/${medId}`, { method: "DELETE" });
+        toast("Medicamento eliminado");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    function openApptModal() {
+      const dash = state.dashboard;
+      openModal(`
+        <div class="modal-head">
+          <h3>📅 Nuevo turno veterinario</h3>
+          <button class="btn btn-sm" onclick="closeModal()">✕</button>
+        </div>
+        <div class="field">
+          <label>Perro</label>
+          <select id="apptDog">
+            ${dash.dogs.map(d => `<option value="${esc(d.name)}">${esc(d.name)}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label>Tipo de control</label>
+          <input type="text" id="apptType" placeholder="Ej: Cardiología, Vacuna, Análisis" />
+        </div>
+        <div class="field">
+          <label>Fecha y hora</label>
+          <input type="datetime-local" id="apptWhen" />
+        </div>
+        <div class="field">
+          <label>Veterinaria / Lugar</label>
+          <input type="text" id="apptLoc" placeholder="Ej: Vet del Parque" />
+        </div>
+        <div class="field">
+          <label>Notas</label>
+          <input type="text" id="apptNotes" placeholder="Ej: Ir en ayunas, llevar estudios" />
+        </div>
+        <label class="check-row">
+          <input type="checkbox" id="apptPub" checked />
+          <span>Publicar evento en el grupo de WhatsApp</span>
+        </label>
+        <label class="check-row">
+          <input type="checkbox" id="apptGcal" checked />
+          <span>Agregar también a Google Calendar</span>
+        </label>
+        <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitAppt()">Guardar turno</button>
+      `);
+    }
+
+    async function submitAppt() {
+      const whenVal = document.getElementById("apptWhen").value;
+      const checkup_type = document.getElementById("apptType").value.trim();
+      if (!whenVal || !checkup_type) { toast("Completá tipo y fecha/hora", "err"); return; }
+      const scheduled_at = Math.floor(new Date(whenVal).getTime() / 1000);
+      const payload = {
+        dog_name: document.getElementById("apptDog").value,
+        checkup_type,
+        scheduled_at,
+        location: document.getElementById("apptLoc").value.trim(),
+        notes: document.getElementById("apptNotes").value.trim(),
+        publish_to_whatsapp: document.getElementById("apptPub").checked,
+        publish_to_gcal: document.getElementById("apptGcal").checked,
+      };
+      try {
+        const res = await api("/api/appointments", { method: "POST", body: JSON.stringify(payload) });
+        closeModal();
+        const parts = [];
+        if (res.publish_result?.mode && res.publish_result.mode !== "none") parts.push(`WA: ${res.publish_result.mode}`);
+        if (res.publish_result?.gcal?.ok) parts.push("Google Calendar ✓");
+        else if (res.publish_result?.gcal?.error) parts.push(`GCal err: ${res.publish_result.gcal.error}`);
+        toast(parts.length ? `Turno guardado (${parts.join(" · ")})` : "Turno guardado");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    async function deleteAppt(id) {
+      if (!confirm("¿Eliminar este turno?")) return;
+      try {
+        await api(`/api/appointments/${id}`, { method: "DELETE" });
+        toast("Turno eliminado");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    function openDogModal(dogId = null) {
+      const dog = dogId ? state.dashboard.dogs.find(d => d.id === dogId) : null;
+      openModal(`
+        <div class="modal-head">
+          <h3>${dog ? "Editar perro" : "Agregar perro"}</h3>
+          <button class="btn btn-sm" onclick="closeModal()">✕</button>
+        </div>
+        <div class="field">
+          <label>Nombre</label>
+          <input type="text" id="dogName" value="${esc(dog?.name || "")}" />
+        </div>
+        <div class="field">
+          <label>Notas</label>
+          <input type="text" id="dogNotes" value="${esc(dog?.notes || "")}" placeholder="Peso, alergias, etc." />
+        </div>
+        <label class="check-row">
+          <input type="checkbox" id="dogActive" ${(!dog || dog.active) ? "checked" : ""} />
+          <span>Activo</span>
+        </label>
+        <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitDog(${dog ? dog.id : "null"})">Guardar</button>
+      `);
+    }
+
+    async function submitDog(dogId) {
+      const payload = {
+        name: document.getElementById("dogName").value.trim(),
+        notes: document.getElementById("dogNotes").value.trim(),
+        active: document.getElementById("dogActive").checked,
+      };
+      if (!payload.name) { toast("Falta el nombre", "err"); return; }
+      try {
+        if (dogId) await api(`/api/dogs/${dogId}`, { method: "PUT", body: JSON.stringify(payload) });
+        else await api("/api/dogs", { method: "POST", body: JSON.stringify(payload) });
+        closeModal();
+        toast("Guardado");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    const PHOTO_KIND_LABELS = {
+      package: "Caja / Frasco",
+      dose: "Pastilla / Dosis",
+      other: "Referencia",
+    };
+
+    function openLightbox(url, caption = "") {
+      document.getElementById("lightboxImg").src = url;
+      document.getElementById("lightboxCaption").textContent = caption;
+      document.getElementById("lightboxBackdrop").classList.add("open");
+    }
+
+    function closeLightbox() {
+      document.getElementById("lightboxBackdrop").classList.remove("open");
+      document.getElementById("lightboxImg").src = "";
+    }
+
+    function openPhotosModal(medId) {
+      const med = state.dashboard.medications.find(m => m.id === medId);
+      if (!med) return;
+      const photos = med.photos || [];
+      openModal(`
+        <div class="modal-head">
+          <h3>📷 Fotos: ${esc(med.dog_name)} — ${esc(med.name)}</h3>
+          <button class="btn btn-sm" onclick="closeModal()">✕</button>
+        </div>
+        ${photos.length ? `
+          <div class="photo-grid">
+            ${photos.map(p => `
+              <div class="photo-card">
+                <img src="${esc(p.url)}" alt="${esc(med.name)}" onclick="openLightbox('${esc(p.url)}', '${esc((PHOTO_KIND_LABELS[p.kind] || "Referencia") + (p.caption ? " — " + p.caption : ""))}')" />
+                <div class="photo-card-body">
+                  <span class="badge accent">${esc(PHOTO_KIND_LABELS[p.kind] || p.kind)}</span>
+                  ${p.caption ? `<div class="muted">${esc(p.caption)}</div>` : ""}
+                  <button class="btn btn-sm btn-danger" onclick="deleteMedPhoto(${p.id}, ${med.id})">🗑️ Eliminar</button>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        ` : `<div class="muted" style="margin-bottom:12px;">Todavía no hay fotos para este medicamento. Podés subir la caja/frasco y la pastilla cortada o medida; cuando haya 2, el bot las une automáticamente al mandar el checklist.</div>`}
+        <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">
+        <form onsubmit="submitMedPhoto(event, ${med.id})">
+          <div class="field">
+            <label>Tipo de foto</label>
+            <select id="photoKind">
+              <option value="package">📦 Caja / Frasco</option>
+              <option value="dose">💊 Pastilla cortada / Dosis</option>
+              <option value="other">📷 Otra referencia</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Nota opcional (ej: "media pastilla", "jeringa 2.5 ml")</label>
+            <input type="text" id="photoCaption" placeholder="Opcional" />
+          </div>
+          <div class="field">
+            <label>Sacar foto o elegir de la galería</label>
+            <input type="file" id="photoFile" accept="image/*" required />
+          </div>
+          <button class="btn btn-primary" type="submit" id="photoUploadBtn" style="width:100%;">Subir foto</button>
+        </form>
+      `);
+    }
+
+    async function submitMedPhoto(e, medId) {
+      e.preventDefault();
+      const fileInput = document.getElementById("photoFile");
+      if (!fileInput.files || !fileInput.files[0]) {
+        toast("Elegí una imagen", "err");
+        return;
+      }
+      const btn = document.getElementById("photoUploadBtn");
+      btn.disabled = true;
+      btn.textContent = "Subiendo...";
+      try {
+        const fd = new FormData();
+        fd.append("file", fileInput.files[0]);
+        fd.append("kind", document.getElementById("photoKind").value);
+        fd.append("caption", document.getElementById("photoCaption").value.trim());
+        const res = await fetch(`/api/medications/${medId}/photos`, { method: "POST", body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || `Error HTTP ${res.status}`);
+        toast("Foto guardada");
+        await loadAll(false);
+        openPhotosModal(medId);
+      } catch (err) {
+        toast(err.message, "err");
+        btn.disabled = false;
+        btn.textContent = "Subir foto";
+      }
+    }
+
+    async function deleteMedPhoto(photoId, medId) {
+      if (!confirm("¿Eliminar esta foto?")) return;
+      try {
+        await api(`/api/photos/${photoId}`, { method: "DELETE" });
+        toast("Foto eliminada");
+        await loadAll(false);
+        openPhotosModal(medId);
+      } catch (err) {
+        toast(err.message, "err");
+      }
+    }
+
+    async function saveSettings() {
+      const payload = {
+        whatsapp_group_id: document.getElementById("cfgGroupId").value.trim(),
+        whatsapp_group_name: document.getElementById("cfgGroupName").value.trim(),
+        lunch_time: document.getElementById("cfgLunch").value,
+        lunch_followup_time: document.getElementById("cfgLunchFollowup").value,
+        dinner_time: document.getElementById("cfgDinner").value,
+        dinner_followup_time: document.getElementById("cfgDinnerFollowup").value,
+        send_photos_in_dm: document.getElementById("cfgSendPhotos").value,
+      };
+      try {
+        await api("/api/settings", { method: "PUT", body: JSON.stringify(payload) });
+        toast("Configuración guardada");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    async function saveFamilyName(memberId) {
+      const display_name = document.getElementById(`fam-${memberId}`).value.trim();
+      if (!display_name) { toast("El nombre no puede quedar vacío", "err"); return; }
+      try {
+        await api(`/api/family/${memberId}`, { method: "PUT", body: JSON.stringify({ display_name }) });
+        toast("Nombre actualizado");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    loadAll(false);
+  </script>
+</body>
+</html>
