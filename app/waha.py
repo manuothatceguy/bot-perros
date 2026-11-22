@@ -180,8 +180,8 @@ class WahaClient:
         for g in items:
             if not isinstance(g, dict):
                 continue
-            gid = g.get("id") or ""
-            subject = g.get("subject") or g.get("name") or ""
+            gid = g.get("id") or g.get("JID") or ""
+            subject = g.get("subject") or g.get("name") or g.get("Name") or ""
             if gid:
                 groups.append({"id": gid, "subject": subject})
         groups.sort(key=lambda x: (x["subject"] or x["id"]).lower())

@@ -73,7 +73,7 @@ class FakeWahaClient:
 
     async def get_group(self, group_id: str) -> dict[str, Any] | None:
         for g in self.groups:
-            if g["id"] == group_id:
+            if (g.get("id") or g.get("JID")) == group_id:
                 return g
         return None
 

@@ -345,6 +345,7 @@
 
       <div class="section-head" style="margin-top: 18px;">
         <h2>Integrantes de la familia</h2>
+        <button class="btn btn-sm" onclick="syncFamily()">🔄 Sincronizar del grupo</button>
       </div>
       <div class="card" id="familyList"></div>
 
@@ -1374,6 +1375,14 @@
       try {
         await api(`/api/family/${memberId}`, { method: "PUT", body: JSON.stringify({ display_name }) });
         toast("Nombre actualizado");
+        await loadAll(false);
+      } catch (err) { toast(err.message, "err"); }
+    }
+
+    async function syncFamily() {
+      try {
+        const res = await api("/api/family/sync", { method: "POST" });
+        toast(`Sincronizados ${res.synced} integrantes del grupo`);
         await loadAll(false);
       } catch (err) { toast(err.message, "err"); }
     }

@@ -435,3 +435,83 @@ async def test_sync_group_participants_resolves_lids_and_skips_bot(
     assert jids["5491100000001@c.us"]["lid"] == "200002@lid"
     assert jids["5491100000001@c.us"]["display_name"] == "Ana"
     assert jids["5491100000002@c.us"]["lid"] == "300003@lid"
+
+
+@pytest.mark.asyncio
+async def test_gows_group_poll_vote_routes_dm_to_voter_never_group(
+    bot: DogBot, db: Database, fake_waha: FakeWahaClient
+):
+    """WAHA GOWS sets vote.from to the group JID and puts the voter in vote.participant / _data.Info."""
+    group_id = "120363000000001@g.us"
+    db.create_medication(
+        dog_name="Pancho",
+        name="Omeprazol",
+        unit="pills",
+        dose_lunch=0.5,
+        dose_dinner=0.0,
+        timing="fasting_before",
+        fasting_offset_min=30,
+        start_date="2026-04-20",
+        stock_quantity=10,
+    )
+    fake_waha.session_info["me"] = {"id": "5491100000000@c.us", "lid": "100001@lid"}
+    fake_waha.groups = [
+        {
+            "JID": group_id,
+            "Name": "Perros",
+            "Participants": [
+                {"JID": "100001@lid", "PhoneNumber": "5491100000000@s.whatsapp.net", "LID": "100001@lid"},
+                {"JID": "133096775114767@lid", "PhoneNumber": "5491100000002@s.whatsapp.net", "LID": "133096775114767@lid"},
+            ],
+        }
+    ]
+    assert await bot.sync_group_participants() == 1
+
+    await bot.send_meal_reminder("2026-04-20", "lunch")
+    poll_msg_id = fake_waha.sent_polls[-1]["id"]
+
+    res = await bot.handle_webhook(
+        {
+            "event": "poll.vote",
+            "payload": {
+                "poll": {"id": poll_msg_id, "to": group_id},
+                "vote": {
+                    "id": f"false_{group_id}_VOTE1",
+                    "from": group_id,
+                    "fromMe": False,
+                    "to": "5491100000000@c.us",
+                    "participant": "133096775114767@lid",
+                    "selectedOptions": ["✋ Yo les doy"],
+                    "timestamp": 1700000001000,
+                },
+                "_data": {
+                    "Info": {
+                        "Chat": group_id,
+                        "Sender": "133096775114767@lid",
+                        "SenderAlt": "5491100000002@s.whatsapp.net",
+                        "PushName": "Manu",
+                        "IsGroup": True,
+                        "IsFromMe": False,
+                    }
+                },
+            },
+        }
+    )
+    assert res == {"status": "ok", "action": "claim_group_poll"}
+
+    # Checklist text + DM poll MUST go to 5491100000002@c.us, NEVER to the group
+    dm_texts = [m for m in fake_waha.sent_texts if m["chat_id"] == "5491100000002@c.us"]
+    assert len(dm_texts) == 1
+    assert "Omeprazol" in dm_texts[0]["text"]
+
+    dm_polls = [p for p in fake_waha.sent_polls if p["chat_id"] == "5491100000002@c.us"]
+    assert len(dm_polls) == 1
+    assert "Checklist Almuerzo" in dm_polls[0]["name"]
+
+    # Group must ONLY receive the short claim announcement with the human name, NOT the checklist or group ID
+    group_texts = [m for m in fake_waha.sent_texts if m["chat_id"] == group_id]
+    assert len(group_texts) == 1
+    assert "Manu" in group_texts[0]["text"]
+    assert "120363000000001" not in group_texts[0]["text"]
+    assert "Omeprazol" not in group_texts[0]["text"]
+    assert len([p for p in fake_waha.sent_polls if p["chat_id"] == group_id]) == 1

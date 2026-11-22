@@ -136,7 +136,7 @@ class DogBot:
         group = await self.waha.get_group(gid)
         if not group:
             return 0
-        participants = group.get("participants") or []
+        participants = group.get("participants") or group.get("Participants") or []
         if not participants:
             return 0
 
@@ -146,14 +146,16 @@ class DogBot:
         for p in participants:
             if not isinstance(p, dict):
                 continue
-            p_id = normalize_jid(p.get("id") or "")
-            p_pn = normalize_jid(p.get("phoneNumber") or "")
-            if p_id in (me_jid, me_lid) or (p_pn and p_pn == me_jid):
+            p_id = normalize_jid(p.get("id") or p.get("JID") or "")
+            p_pn = normalize_jid(p.get("phoneNumber") or p.get("PhoneNumber") or "")
+            p_lid = normalize_jid(p.get("lid") or p.get("LID") or "")
+            p_name = str(p.get("displayName") or p.get("DisplayName") or "").strip()
+            if p_id in (me_jid, me_lid) or (p_pn and p_pn == me_jid) or (p_lid and p_lid == me_lid):
                 continue
             cus = p_pn if p_pn.endswith("@c.us") else (p_id if p_id.endswith("@c.us") else "")
-            lid = p_id if p_id.endswith("@lid") else None
+            lid = p_lid if p_lid.endswith("@lid") else (p_id if p_id.endswith("@lid") else None)
             jid = cus or lid
-            if not jid:
+            if not jid or jid.endswith("@g.us"):
                 continue
             existing = (
                 self.db.get_family_member_by_jid_or_lid(jid)
@@ -163,7 +165,7 @@ class DogBot:
             if existing and existing.get("custom_name"):
                 display_name = existing["display_name"]
             else:
-                display_name = await self.waha.get_contact_name(jid)
+                display_name = p_name or await self.waha.get_contact_name(jid)
                 if not display_name and existing:
                     display_name = existing["display_name"]
             self.db.upsert_family_member(
@@ -223,6 +225,9 @@ class DogBot:
         if not dm_jid:
             dm_jid = norm_raw or norm_alt
 
+        if dm_jid.endswith("@g.us"):
+            return dm_jid, "Familia"
+
         clean_push = (push_name or "").strip()
         if member and member.get("custom_name"):
             display_name = member["display_name"]
@@ -267,6 +272,7 @@ class DogBot:
             return (
                 f"vote:{poll.get('id') or ''}:"
                 f"{vote.get('from') or ''}:"
+                f"{vote.get('participant') or ''}:"
                 f"{vote.get('timestamp') or ''}:"
                 f"{opts}"
             )
@@ -315,14 +321,23 @@ class DogBot:
         log_row, kind = found
         date_str = log_row["date"]
         meal = log_row["meal"]
+        raw_data = payload.get("_data") or {}
+        gows_info = raw_data.get("Info") if isinstance(raw_data, dict) else None
+        if not isinstance(gows_info, dict):
+            gows_info = {}
+        gows_sender = normalize_jid(gows_info.get("Sender") or "")
+        gows_sender_alt = normalize_jid(gows_info.get("SenderAlt") or "")
+        gows_push = str(gows_info.get("PushName") or raw_data.get("pushName") or vote.get("notifyName") or "").strip() or None
 
         if kind == "dm":
-            voter_raw = normalize_jid(vote.get("from") or "")
+            vote_from = normalize_jid(vote.get("from") or "")
+            voter_raw = vote_from if vote_from and not vote_from.endswith("@g.us") else gows_sender
             if voter_raw == "me" or vote.get("fromMe"):
                 voter_raw = log_row.get("claimed_by_jid") or normalize_jid(vote.get("to") or "") or voter_raw
             actor_jid, actor_name = await self.resolve_actor(
                 voter_raw,
-                push_name=log_row.get("claimed_by") if voter_raw == log_row.get("claimed_by_jid") else None,
+                alt_jid=gows_sender_alt or None,
+                push_name=gows_push or (log_row.get("claimed_by") if voter_raw == log_row.get("claimed_by_jid") else None),
             )
             # Multi-select priority: confirm -> release -> fasting
             if any(opt.startswith("✅") for opt in selected):
@@ -336,9 +351,25 @@ class DogBot:
                 return {"status": "ok", "action": "fasting_dm_poll"}
             return {"status": "ignored", "reason": "unrecognized_dm_option"}
 
-        # Group poll
-        voter_raw = normalize_jid(vote.get("from") or "")
-        actor_jid, actor_name = await self.resolve_actor(voter_raw)
+        # Group poll: in WAHA GOWS vote.from is the group JID and voter is in vote.participant / _data.Info.Sender
+        vote_participant = normalize_jid(vote.get("participant") or "")
+        vote_from = normalize_jid(vote.get("from") or "")
+        voter_raw = ""
+        for cand in (vote_participant, gows_sender, vote_from):
+            if cand and not cand.endswith("@g.us"):
+                voter_raw = cand
+                break
+        if not voter_raw:
+            logger.warning("Ignoring group poll.vote with unresolved voter: %s", payload)
+            return {"status": "ignored", "reason": "unresolved_group_voter"}
+        actor_jid, actor_name = await self.resolve_actor(
+            voter_raw,
+            alt_jid=gows_sender_alt or None,
+            push_name=gows_push,
+        )
+        if not actor_jid or actor_jid.endswith("@g.us"):
+            logger.warning("Ignoring group poll.vote resolved to group JID: %s", actor_jid)
+            return {"status": "ignored", "reason": "unresolved_group_voter"}
         if any(opt.startswith("✅") for opt in selected):
             await self.confirm_meal(date_str, meal, actor_jid, actor_name, from_dm=False)
             return {"status": "ok", "action": "confirm_group_poll"}
@@ -367,15 +398,19 @@ class DogBot:
         log_row, kind = found
         date_str = log_row["date"]
         meal = log_row["meal"]
-        key = (payload.get("_data") or {}).get("key") or {}
+        raw_data = payload.get("_data") or {}
+        key = raw_data.get("key") or {}
+        gows_info = raw_data.get("Info") or {}
         is_group = str(payload.get("from") or "").endswith("@g.us")
         raw_sender = (
-            payload.get("participant") or key.get("participant") or payload.get("from")
+            payload.get("participant") or gows_info.get("Sender") or key.get("participant") or payload.get("from")
             if is_group
             else payload.get("from")
         )
-        alt_sender = key.get("participantAlt") if is_group else key.get("remoteJidAlt")
-        push_name = payload.get("notifyName") or (payload.get("_data") or {}).get("pushName")
+        alt_sender = (
+            gows_info.get("SenderAlt") or (key.get("participantAlt") if is_group else key.get("remoteJidAlt"))
+        )
+        push_name = payload.get("notifyName") or gows_info.get("PushName") or raw_data.get("pushName")
         actor_jid, actor_name = await self.resolve_actor(raw_sender, alt_sender, push_name)
 
         if kind == "group":
@@ -413,7 +448,7 @@ class DogBot:
             return
         info = await self.waha.get_group(group_jid)
         if info:
-            subj = normalize_text(str(info.get("subject") or info.get("name") or ""))
+            subj = normalize_text(str(info.get("subject") or info.get("name") or info.get("Name") or ""))
             if subj == expected:
                 self.db.set_setting("whatsapp_group_id", group_jid)
                 logger.info("Auto-bound WhatsApp group '%s' -> %s", info.get("subject"), group_jid)
@@ -438,14 +473,18 @@ class DogBot:
             return {"status": "ignored", "reason": "ignored_chat"}
 
         is_group = chat_id.endswith("@g.us")
-        key = (payload.get("_data") or {}).get("key") or {}
+        raw_data = payload.get("_data") or {}
+        key = raw_data.get("key") or {}
+        gows_info = raw_data.get("Info") or {}
         raw_sender = (
-            payload.get("participant") or payload.get("author") or key.get("participant") or chat_id
+            payload.get("participant") or payload.get("author") or gows_info.get("Sender") or key.get("participant") or chat_id
             if is_group
             else chat_id
         )
-        alt_sender = key.get("participantAlt") if is_group else key.get("remoteJidAlt")
-        push_name = payload.get("notifyName") or (payload.get("_data") or {}).get("pushName")
+        alt_sender = (
+            gows_info.get("SenderAlt") or (key.get("participantAlt") if is_group else key.get("remoteJidAlt"))
+        )
+        push_name = payload.get("notifyName") or gows_info.get("PushName") or raw_data.get("pushName")
         actor_jid, actor_name = await self.resolve_actor(raw_sender, alt_sender, push_name)
 
         if is_group:
@@ -789,6 +828,9 @@ class DogBot:
         now_ts: int | None = None,
     ) -> dict[str, Any]:
         ts = now_ts if now_ts is not None else int(time.time())
+        if not actor_jid or actor_jid.endswith("@g.us"):
+            logger.error("Refusing to send DM checklist to invalid/group JID: %s", actor_jid)
+            return {"status": "error", "reason": "invalid_dm_jid"}
         existing = self.db.get_dose_log(date_str, meal)
         meal_title = MEAL_LABELS[meal]
         if existing and existing.get("given_at"):
@@ -958,6 +1000,9 @@ class DogBot:
         now_ts: int | None = None,
     ) -> dict[str, Any]:
         ts = now_ts if now_ts is not None else int(time.time())
+        if not actor_jid or actor_jid.endswith("@g.us"):
+            logger.error("Refusing to send DM checklist to invalid/group JID: %s", actor_jid)
+            return {"status": "error", "reason": "invalid_dm_jid"}
         existing = self.db.get_dose_log(date_str, meal)
         if existing and (existing.get("given_at") or existing.get("fasting_given_at")):
             return {"status": "noop", "log": existing}

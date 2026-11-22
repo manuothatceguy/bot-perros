@@ -625,6 +625,12 @@ async def list_family(request: Request) -> list[dict[str, Any]]:
     return _db(request).list_family_members()
 
 
+@router.post("/api/family/sync")
+async def sync_family(request: Request) -> dict[str, Any]:
+    synced = await _bot(request).sync_group_participants()
+    return {"synced": synced, "family": _db(request).list_family_members()}
+
+
 @router.put("/api/family/{member_id}")
 async def update_family_member(
     member_id: int, body: FamilyUpdate, request: Request
